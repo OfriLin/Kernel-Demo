@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>הדגמת קרנלים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Hebrew:wght@400;500;700&display=swap">
+<style>
+/* Layout: RTL — purple deck-style top bar; gold kernel workbench (right) | gray-lavender image stage (left) with run controls above source + output */
+:root{
+  --paper:#FFFFFF; --bg:#F4F2F9; --stage:#DEDBEA; --ink:#1F1D45; --muted:#5E5B7A; --line:#1F1D45; --soft:#CFCAE2; --hatch:#E6E2F1;
+  --brand-a:#A752EE; --brand-b:#3A2F86; --on-brand:#FFFFFF;
+  --accent:#6B35D9; --on-accent:#FFFFFF;
+  --gold:#E9A800; --gold-bg:#FFF3CF; --gold-text:#7A5000;
+  --out-ink:#5424AA; --out-bg:#F2EDFC;
+  --hit:#0B7A3B; --miss:#C0102C;
+  --px-black:#15171B; --px-white:#FFFFFF;
+  --sans:"IBM Plex Sans Hebrew","Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,"Courier New",monospace;
+  --cell:clamp(16px, min(2.15vw, 4.5vh), 52px); --gap:2px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1C1A33; --bg:#131126; --stage:#2A2744; --ink:#ECEAF6; --muted:#A6A2C2; --line:#ECEAF6; --soft:#3D3960; --hatch:#2F2C4C;
+    --accent:#A585FF; --on-accent:#0F0D20;
+    --gold:#FFC94A; --gold-bg:#3B3010; --gold-text:#FFC94A;
+    --hit:#52C986; --miss:#FF7085; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1C1A33; --bg:#131126; --stage:#2A2744; --ink:#ECEAF6; --muted:#A6A2C2; --line:#ECEAF6; --soft:#3D3960; --hatch:#2F2C4C;
+  --accent:#A585FF; --on-accent:#0F0D20;
+  --gold:#FFC94A; --gold-bg:#3B3010; --gold-text:#FFC94A;
+  --hit:#52C986; --miss:#FF7085; color-scheme:dark;
+}
+html{font-size:clamp(15px, 1.02vw, 20px)}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.5; -webkit-font-smoothing:antialiased}
+button,input,select{font-family:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+
+/* top bar in the deck's purple gradient */
+.topbar{background:linear-gradient(90deg, var(--brand-a), var(--brand-b)); color:var(--on-brand); padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.topbar-in{max-width:1900px; margin:0 auto; min-height:72px; display:flex; flex-wrap:wrap; align-items:center; gap:10px 28px; padding-block:10px}
+.logo{display:grid; grid-template-columns:repeat(3, 9px); gap:2px; background:var(--on-brand); border:2px solid var(--on-brand); flex:none; direction:ltr}
+.logo i{width:9px; height:9px; background:var(--brand-b)}
+.logo i.on{background:var(--gold)}
+.brand{display:flex; align-items:center; gap:12px}
+h1{font-size:1.65rem; font-weight:700; margin:0; line-height:1.1}
+.tabs{display:flex; gap:6px}
+.tabs button{min-height:42px; border:2px solid var(--on-brand); background:transparent; color:var(--on-brand); padding:0 1.1em; cursor:pointer; font-weight:700; font-size:1rem; border-radius:0}
+.tabs button:hover{background:rgba(255,255,255,.14)}
+.tabs button[aria-selected="true"]{background:var(--on-brand); color:#3A2F86}
+.spacer{flex:1}
+.topbar .btn{border-color:var(--on-brand); background:transparent; color:var(--on-brand)}
+.topbar .btn:hover{background:rgba(255,255,255,.14)}
+
+.app{padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:20px 32px; max-width:1900px; margin:0 auto}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:8px 18px; border:2px solid var(--line); border-radius:0; background:var(--paper); color:var(--ink); font:700 1rem/1 var(--sans); cursor:pointer; white-space:nowrap}
+.btn:hover{background:var(--hatch)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--ink); color:var(--paper); min-width:8em}
+.btn.primary:hover{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none}
+
+.layout{display:grid; grid-template-columns:minmax(0, 27rem) minmax(0, 1fr); gap:24px; align-items:start}
+h2{font-weight:700; font-size:1.2rem; margin:0; line-height:1.3}
+.hint{margin:0; color:var(--muted); font-size:.92rem}
+
+/* kernel workbench */
+.side{background:var(--gold-bg); border:2px solid var(--line); box-shadow:5px 5px 0 var(--gold); padding:18px; display:flex; flex-direction:column; gap:14px}
+.side h2{font-size:1.5rem}
+.phead{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.kname{font-weight:700; font-size:1rem; color:var(--gold-text)}
+.presets{display:grid; grid-template-columns:repeat(auto-fill, minmax(10.5rem, 1fr)); gap:6px}
+.pbtn{display:flex; align-items:center; gap:.6em; min-height:42px; border:2px solid var(--line); background:var(--paper); padding:.3em .7em; border-radius:0; cursor:pointer; font:700 .98rem/1.2 var(--sans); text-align:start}
+.pbtn:hover{background:var(--hatch)}
+.pbtn[aria-pressed="true"]{background:var(--ink); color:var(--paper)}
+.mk{display:inline-grid; grid-template-columns:repeat(3, .55em); gap:1px; background:#9A96B0; border:1px solid #9A96B0; direction:ltr; flex:none}
+.mk i{width:.55em; height:.55em; background:var(--px-white)}
+.mk i.k1{background:var(--px-black)}
+.kwrap{display:flex; flex-direction:column; align-items:center; gap:6px}
+.kgrid{display:grid; grid-template-columns:repeat(3, 5rem); gap:4px; direction:ltr; padding:6px; background:var(--gold)}
+.kc{width:5rem; height:5rem; border:0; border-radius:0; cursor:pointer; background:var(--px-white)}
+.kc.on{background:var(--px-black)}
+.kc:hover{outline:3px solid var(--accent); outline-offset:-3px}
+.linkbtn{background:none; border:0; color:var(--muted); text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; font:500 .92rem var(--sans)}
+.linkbtn:hover{color:var(--ink)}
+
+.readout{border-top:2px solid var(--line); padding-top:14px; display:flex; flex-direction:column; gap:10px}
+.rpos{font-size:.95rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.rbody{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.cmp{display:grid; grid-template-columns:repeat(3, 2.8rem); gap:2px; direction:ltr; background:#9A96B0; border:4px solid var(--gold)}
+.cc{width:2.8rem; height:2.8rem; display:grid; place-items:center; background:var(--px-white); position:relative}
+.cc.on{background:var(--px-black)}
+.cc.k1::after{content:""; position:absolute; inset:3px; border:3px solid var(--gold)}
+.badge{width:1.5rem; height:1.5rem; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:.95rem; color:#fff; line-height:1; position:relative; z-index:1}
+.badge.hit{background:var(--hit)} .badge.miss{background:var(--miss)}
+.arrow{font-size:1.5rem; color:var(--muted)}
+.res{display:flex; align-items:center; gap:10px; flex:1; min-width:9rem}
+.bigsw{width:3.4rem; height:3.4rem; flex:none; border:4px solid var(--out-ink); display:grid; place-items:center; font-size:1.7rem; font-weight:700; background:var(--paper)}
+.rtxt{font-weight:700}
+
+/* images column */
+.main{display:flex; flex-direction:column; gap:0; min-width:0; border:2px solid var(--line)}
+.controls{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; background:var(--paper); border-bottom:2px solid var(--line); padding:10px 12px}
+.cgroup{display:flex; flex-wrap:wrap; gap:8px}
+.speed{display:flex; align-items:center; gap:8px; font-size:.95rem; font-weight:500}
+.speed input{width:8rem; accent-color:var(--ink)}
+.progress{margin-inline-start:auto; font-weight:500; font-size:.95rem; font-variant-numeric:tabular-nums; color:var(--muted)}
+.stagebox{background:var(--stage); padding:20px; display:flex; flex-direction:column; gap:16px}
+.pair{display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start}
+.pane{display:flex; flex-direction:column; gap:8px; min-width:0}
+.pane h2{font-size:1.15rem}
+.pane h2 .tagout{display:inline-block; width:.8em; height:.8em; background:var(--out-ink); margin-inline-end:.4em; vertical-align:-.05em}
+
+.gwrap{position:relative; direction:ltr; width:max-content}
+.pxgrid{display:grid; gap:var(--gap); background:#9A96B0; border:var(--gap) solid #9A96B0}
+.px{width:var(--cell); height:var(--cell); border:0; padding:0; margin:0; border-radius:0; background:var(--px-white); display:block}
+button.px{cursor:pointer}
+.px.on{background:var(--px-black)}
+#outGrid{background:#B9A6E0; border-color:#B9A6E0}
+#outGrid .px{background:var(--out-bg)}
+#outGrid .px.on{background:var(--out-ink)}
+#outGrid .px.pending{background:repeating-linear-gradient(45deg, #E3DCF3 0 4px, #FFFFFF 4px 9px)}
+.px.current{box-shadow:0 0 0 4px var(--accent); position:relative; z-index:1}
+.lens{position:absolute; box-sizing:border-box; border:5px solid var(--gold); pointer-events:none; transition-property:left,top; transition-timing-function:ease-out; z-index:2}
+.lgrid{display:grid}
+.lgrid i{display:block}
+.lgrid i.k1{box-shadow:inset 0 0 0 4px var(--gold)}
+
+/* shelf */
+.shelf{display:flex; flex-direction:column; gap:10px; background:var(--paper); border-top:2px solid var(--line); padding:14px 16px}
+.shelf h2{font-size:1.1rem}
+.shelfrow{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start}
+.thumb{border:2px solid var(--line); background:var(--paper); border-radius:0; padding:8px; display:flex; flex-direction:column; gap:6px; align-items:center; cursor:pointer; font:600 .88rem var(--sans)}
+.thumb:hover{background:var(--hatch)}
+.thumb canvas{height:6rem; width:auto; max-width:12rem; image-rendering:pixelated; display:block; border:1px solid var(--soft)}
+.thumb > span{display:flex; gap:6px; align-items:center}
+.empty{color:var(--muted); font-size:.95rem; margin:0; max-width:65ch}
+
+/* photo */
+.pframe{position:relative; line-height:0; border:2px solid var(--line); direction:ltr; background:var(--paper)}
+.pframe canvas{width:100%; height:auto; display:block}
+.pframe.outf{background:repeating-linear-gradient(45deg, #E3DCF3 0 5px, #FFFFFF 5px 11px); border-color:var(--out-ink)}
+.plens{position:absolute; outline:3px solid var(--gold); box-shadow:0 0 0 6px rgba(233,168,0,.4); pointer-events:none; min-width:4px; min-height:4px}
+.pmark{position:absolute; outline:3px solid var(--accent); box-shadow:0 0 0 6px rgba(107,53,217,.35); pointer-events:none; min-width:3px; min-height:3px}
+.drop{border:3px dashed var(--line); background:var(--paper); min-height:18rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px}
+.drop.drag,.pframe.drag{border-color:var(--accent); background:var(--out-bg)}
+.drop p{margin:0; font-size:1.1rem; font-weight:500}
+.vh{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.opts{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; font-size:.95rem}
+.opts .hint{font-variant-numeric:tabular-nums}
+.opts .btn{height:44px}
+select{min-height:44px; border:2px solid var(--line); background:var(--paper); border-radius:0; padding:0 .5em; font-weight:500}
+
+@media (max-width:1100px){
+  :root{--cell:min(7vw, 42px)}
+  .layout{grid-template-columns:minmax(0, 1fr)}
+  .pair{justify-content:center}
+}
+/* success moment: lens blinks, then a purple square flies to the output */
+.lens.found{animation:lensFound .32s ease-in-out 2}
+@keyframes lensFound{
+  0%,100%{border-color:var(--gold); box-shadow:0 0 0 0 rgba(34,197,94,0)}
+  50%{border-color:#22C55E; box-shadow:0 0 0 14px rgba(34,197,94,.5), inset 0 0 0 999px rgba(34,197,94,.32)}
+}
+.flyer{position:fixed; z-index:50; background:var(--out-ink); pointer-events:none; box-shadow:0 0 0 4px var(--gold), 0 10px 22px rgba(31,29,69,.35)}
+.px.landed{animation:land .38s ease-out}
+@keyframes land{0%{transform:scale(1.45); box-shadow:0 0 0 6px var(--gold)} 100%{transform:scale(1); box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion: reduce){ .lens{transition:none !important} .lens.found{animation-duration:.2s} .px.landed{animation:none} }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in" dir="rtl">
+    <div class="brand"><span class="logo" aria-hidden="true"><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i></span><h1>הדגמת קרנלים</h1></div>
+    <nav class="tabs" role="tablist" aria-label="מצב">
+      <button id="tab-grid" role="tab" aria-selected="true">בית 10×10</button>
+      <button id="tab-photo" role="tab" aria-selected="false">תמונה אמיתית</button>
+    </nav>
+    <span class="spacer"></span>
+    <button class="btn" id="fsBtn" type="button">מסך מלא</button>
+  </div>
+</header>
+<div class="app" dir="rtl">
+
+  <div class="layout">
+    <!-- right: kernel workbench -->
+    <aside class="side">
+      <div class="phead"><h2>הקרנל</h2><span class="kname" id="kName"></span></div>
+      <div class="presets" id="presets"></div>
+      <div class="kwrap">
+        <div class="kgrid" id="kGrid"></div>
+        <button class="linkbtn" id="kClear" type="button">ניקוי הקרנל</button>
+      </div>
+      <div class="readout" aria-live="polite">
+        <div class="rpos" id="rPos"></div>
+        <div class="rbody">
+          <div class="cmp" id="cmp"></div>
+          <div class="arrow" aria-hidden="true">←</div>
+          <div class="res"><div class="bigsw" id="rSw"></div><div class="rtxt" id="rTxt"></div></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- house mode -->
+    <section class="main" id="view-grid">
+      <div class="controls">
+        <div class="cgroup">
+          <button class="btn" id="gReset" type="button">↺ מההתחלה</button>
+          <button class="btn" id="gBack" type="button">צעד אחורה</button>
+          <button class="btn primary" id="gPlay" type="button">▶ הפעלה</button>
+          <button class="btn" id="gNext" type="button">צעד הבא</button>
+        </div>
+        <label class="speed" for="gSpeed">מהירות <input type="range" id="gSpeed" min="1" max="10" value="5"></label>
+        <span class="progress" id="gProg"></span>
+      </div>
+      <div class="stagebox">
+      <div class="pair">
+        <div class="pane">
+          <h2>התמונה</h2>
+          <div class="gwrap" id="inWrap">
+            <div class="pxgrid" id="inGrid"></div>
+            <div class="lens" id="lens"><div class="lgrid" id="lensGrid"></div></div>
+          </div>
+          <div class="cgroup">
+            <button class="btn" id="imgHouse" type="button">ציור הבית</button>
+            <button class="btn" id="imgClear" type="button">ציירו תמונה</button>
+          </div>
+        </div>
+        <div class="pane">
+          <h2><span class="tagout" aria-hidden="true"></span>הפלט</h2>
+          <div class="gwrap"><div class="pxgrid" id="outGrid"></div></div>
+        </div>
+      </div>
+      </div>
+      <div class="shelf">
+        <h2>התוצאות שאספנו</h2>
+        <div class="shelfrow" id="gShelf"></div>
+      </div>
+    </section>
+
+    <!-- photo mode -->
+    <section class="main" id="view-photo" hidden>
+      <div class="controls">
+        <div class="cgroup">
+          <button class="btn" id="pReset" type="button">↺ מההתחלה</button>
+          <button class="btn" id="pBack" type="button">צעד אחורה</button>
+          <button class="btn primary" id="pPlay" type="button">▶ הפעלה</button>
+          <button class="btn" id="pStep" type="button">צעד הבא</button>
+          <button class="btn" id="pRow" type="button">שורה הבאה</button>
+        </div>
+        <label class="speed" for="pSpeed">מהירות <input type="range" id="pSpeed" min="1" max="10" value="7"></label>
+        <span class="progress" id="pProg"></span>
+      </div>
+
+      <div class="stagebox">
+      <div class="drop" id="pDrop">
+        <p>העלו תמונה כדי לראות איך הקרנל עובר עליה</p>
+        <label class="btn primary" for="pFile">העלאת תמונה</label>
+        <span class="hint">אפשר גם לגרור תמונה לכאן</span>
+      </div>
+      <input class="vh" type="file" id="pFile" accept="image/*">
+
+      <div class="pair" id="pPair" hidden>
+        <div class="pane">
+          <h2>התמונה</h2>
+          <div class="pframe" id="pInFrame">
+            <canvas id="pIn"></canvas>
+            <div class="plens" id="pLens"></div>
+          </div>
+        </div>
+        <div class="pane">
+          <h2><span class="tagout" aria-hidden="true"></span>הפלט</h2>
+          <div class="pframe outf" id="pOutFrame">
+            <canvas id="pOut"></canvas>
+            <div class="pmark" id="pMark" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="opts" id="pOpts" hidden>
+        <label class="btn" for="pFile">החלפת תמונה</label>
+        <label for="pRes">רזולוציה:</label>
+        <select id="pRes">
+          <option value="80">80 פיקסלים לרוחב</option>
+          <option value="160">160 פיקסלים לרוחב</option>
+          <option value="240" selected>240 פיקסלים לרוחב</option>
+          <option value="360">360 פיקסלים לרוחב</option>
+          <option value="480">480 פיקסלים לרוחב</option>
+        </select>
+        <span class="hint" id="pInfo"></span>
+      </div>
+      </div>
+
+      <div class="shelf">
+        <h2>התוצאות שאספנו</h2>
+        <div class="shelfrow" id="pShelf"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+const fmt = n => n.toLocaleString('he-IL');
+const copyK = k => k.map(r => r.slice());
+const sameK = (a,b) => a.every((r,i) => r.every((v,j) => v === b[i][j]));
+function miniK(k){
+  const m = el('span','mk'); m.setAttribute('aria-hidden','true');
+  for (const row of k) for (const v of row) m.append(el('i', v ? 'k1' : ''));
+  return m;
+}
+
+/* ---------------- shared kernel ---------------- */
+const PRESETS = [
+  {name:'קו אנכי',  k:[[0,1,0],[0,1,0],[0,1,0]]},
+  {name:'קו אופקי', k:[[0,0,0],[1,1,1],[0,0,0]]},
+  {name:'אלכסון ╲', k:[[1,0,0],[0,1,0],[0,0,1]]},
+  {name:'אלכסון ╱', k:[[0,0,1],[0,1,0],[1,0,0]]},
+  {name:'פינה',     k:[[0,0,0],[0,1,1],[0,1,0]]},
+];
+const K = { k: copyK(PRESETS[0].k), name: PRESETS[0].name };
+const kCells = [], cmpCells = [];
+for (let i=0;i<9;i++){
+  const b = el('button','kc'); b.type = 'button';
+  b.setAttribute('aria-label', `משבצת בקרנל ${i+1}`);
+  b.addEventListener('click', () => {
+    K.k[Math.floor(i/3)][i%3] ^= 1;
+    const p = PRESETS.find(p => sameK(p.k, K.k)); K.name = p ? p.name : 'קרנל שציירנו';
+    kernelChanged();
+  });
+  $('#kGrid').append(b); kCells.push(b);
+}
+for (let i=0;i<9;i++){ const c = el('div','cc'); $('#cmp').append(c); cmpCells.push(c); }
+const presetBtns = PRESETS.map(p => {
+  const b = el('button','pbtn'); b.type = 'button';
+  b.append(miniK(p.k), document.createTextNode(p.name));
+  b.onclick = () => { K.k = copyK(p.k); K.name = p.name; kernelChanged(); };
+  $('#presets').append(b); return b;
+});
+$('#kClear').onclick = () => { K.k = [[0,0,0],[0,0,0],[0,0,0]]; K.name = 'קרנל שציירנו'; kernelChanged(); };
+function renderKernel(){
+  K.k.flat().forEach((v,i) => { kCells[i].className = 'kc' + (v ? ' on' : ''); });
+  $('#kName').textContent = K.name;
+  presetBtns.forEach((b,i) => b.setAttribute('aria-pressed', sameK(PRESETS[i].k, K.k)));
+}
+function kernelChanged(){
+  renderKernel();
+  gReset();
+  if (P.loaded){ pStop(); pCompute(); pSetN(0, true); }
+}
+function setResult(color, symbol, text){
+  const sw = $('#rSw'); sw.style.background = color || ''; sw.textContent = symbol || ''; $('#rTxt').textContent = text;
+}
+
+/* ---------------- tabs & fullscreen ---------------- */
+let activeTab = 'grid';
+function setTab(name){
+  activeTab = name;
+  $('#tab-grid').setAttribute('aria-selected', name === 'grid');
+  $('#tab-photo').setAttribute('aria-selected', name === 'photo');
+  $('#view-grid').hidden = name !== 'grid';
+  $('#view-photo').hidden = name !== 'photo';
+  if (name === 'grid'){ pStop(); gRender(); } else { gStop(); pSizeFrames(); pRefresh(); }
+}
+$('#tab-grid').onclick = () => setTab('grid');
+$('#tab-photo').onclick = () => setTab('photo');
+$('#fsBtn').onclick = () => {
+  try {
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    else document.documentElement.requestFullscreen().catch(()=>{});
+  } catch(e){}
+};
+document.addEventListener('fullscreenchange', () => { $('#fsBtn').textContent = document.fullscreenElement ? 'יציאה ממסך מלא' : 'מסך מלא'; setTimeout(pSizeFrames, 50); });
+
+/* =================== HOUSE MODE =================== */
+const N = 10, M = N - 2, TOTAL = M*M;
+const HOUSE = [
+  "....##....",
+  "...#..#...",
+  "..#....#..",
+  ".#......#.",
+  "##########",
+  ".#......#.",
+  ".#..##..#.",
+  ".#..##..#.",
+  ".#..##..#.",
+  ".########.",
+];
+const houseImg = () => HOUSE.map(r => [...r].map(ch => ch === '#' ? 1 : 0));
+const G_DELAYS = [1500,1100,800,560,380,250,160,100,55,25];
+const g = { img: houseImg(), n:0, playing:false, timer:0, speed:5, shelf:[] };
+function gEval(r0, c0){
+  let m = 0, t = 0; const cells = [];
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++){
+    const v = g.img[r0+i][c0+j], k = K.k[i][j];
+    let ok = null;
+    if (k){ t++; ok = v === 1; if (ok) m++; }
+    cells.push({v, k, ok});
+  }
+  return {m, t, found: t > 0 && m === t, cells};
+}
+
+const inGrid = $('#inGrid'), outGrid = $('#outGrid'), lens = $('#lens'), lensGrid = $('#lensGrid');
+inGrid.style.gridTemplateColumns = `repeat(${N}, var(--cell))`;
+outGrid.style.gridTemplateColumns = `repeat(${M}, var(--cell))`;
+const inCells = [], outCells = [], lensMarks = [];
+for (let i=0;i<N*N;i++){
+  const a = el('button','px'); a.type = 'button';
+  a.setAttribute('aria-label', `שורה ${Math.floor(i/N)+1}, עמודה ${i%N+1}`);
+  a.addEventListener('click', () => { g.img[Math.floor(i/N)][i%N] ^= 1; g.shelf = []; gReset(); });
+  inGrid.append(a); inCells.push(a);
+}
+for (let i=0;i<TOTAL;i++){ const b = el('div','px pending'); outGrid.append(b); outCells.push(b); }
+for (let i=0;i<9;i++){ const m = el('i'); lensGrid.append(m); lensMarks.push(m); }
+
+function placeLens(idx){
+  const c0 = inCells[0]; if (!c0.offsetWidth) return;
+  const wr = $('#inWrap').getBoundingClientRect(), r0 = c0.getBoundingClientRect(), r1 = inCells[1].getBoundingClientRect(), rN = inCells[N].getBoundingClientRect();
+  const x0 = r0.left - wr.left, y0 = r0.top - wr.top, sx = r1.left - r0.left, sy = rN.top - r0.top, w = r0.width, h = r0.height;
+  const B = 5, row = Math.floor(idx/M), col = idx%M;
+  lens.style.transitionDuration = (g.playing ? Math.min(160, G_DELAYS[g.speed-1]*0.6) : 160) + 'ms';
+  lens.style.left = (x0 + col*sx - B) + 'px';
+  lens.style.top = (y0 + row*sy - B) + 'px';
+  lens.style.width = (2*sx + w + 2*B) + 'px';
+  lens.style.height = (2*sy + h + 2*B) + 'px';
+  lensGrid.style.gridTemplateColumns = `repeat(3, ${w}px)`;
+  lensGrid.style.gridTemplateRows = `repeat(3, ${h}px)`;
+  lensGrid.style.gap = `${sy-h}px ${sx-w}px`;
+}
+new ResizeObserver(() => { if (activeTab === 'grid') placeLens(Math.max(0, g.n-1)); }).observe($('#inWrap'));
+
+function gRender(){
+  for (let i=0;i<N*N;i++) inCells[i].classList.toggle('on', g.img[Math.floor(i/N)][i%N] === 1);
+  const idx = Math.max(0, g.n - 1);
+  for (let i=0;i<TOTAL;i++){
+    const cell = outCells[i];
+    if (i < g.n && i !== g.hold) cell.className = 'px' + (gEval(Math.floor(i/M), i%M).found ? ' on' : '') + (i === g.landed ? ' landed' : '');
+    else cell.className = 'px pending';
+    if (g.n > 0 && i === idx) cell.classList.add('current');
+  }
+  K.k.flat().forEach((v,i) => { lensMarks[i].className = v ? 'k1' : ''; });
+  placeLens(idx);
+  $('#gProg').textContent = `${g.n} מתוך ${TOTAL} משבצות`;
+  $('#gPlay').textContent = g.playing ? '⏸ עצירה' : '▶ הפעלה';
+  $('#gBack').disabled = g.n === 0 || g.hold >= 0;
+  $('#gNext').disabled = g.n >= TOTAL || g.hold >= 0;
+  if (activeTab !== 'grid') return;
+  const row = Math.floor(idx/M), col = idx%M, ev = gEval(row, col), rev = g.n > 0;
+  $('#rPos').textContent = `המשבצת האמצעית: שורה ${row+2}, עמודה ${col+2}`;
+  ev.cells.forEach((cell, i) => {
+    const d = cmpCells[i];
+    d.className = 'cc' + (cell.v === 1 ? ' on' : ''); d.style.background = ''; d.textContent = '';
+    if (cell.k && rev) d.append(el('span', 'badge ' + (cell.ok ? 'hit' : 'miss'), cell.ok ? '✓' : '✗'));
+  });
+  if (ev.t === 0) setResult('', '', 'הקרנל ריק. לחצו על משבצות בקרנל כדי לצבוע אותן בשחור.');
+  else if (!rev) setResult('', '?', 'האם הקרנל ימצא כאן את הצורה?');
+  else if (ev.found) setResult('var(--out-ink)', '', `נמצא! כל ${ev.t} המשבצות מתאימות`);
+  else if (ev.m === 0) setResult('var(--out-bg)', '', 'לא נמצא: אף משבצת לא מתאימה');
+  else setResult('var(--out-bg)', '', `לא נמצא: רק ${ev.m} מתוך ${ev.t} מתאימות`);
+}
+function gStop(){ g.playing = false; clearTimeout(g.timer); }
+function gReset(){ gStop(); cancelCelebrate(); g.n = 0; gRender(); renderGShelf(); }
+/* ---- success moment ---- */
+g.hold = -1; g.landed = -1; g.celeb = [];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function cancelCelebrate(){
+  g.celeb.forEach(t => clearTimeout(t)); g.celeb = [];
+  document.querySelectorAll('.flyer').forEach(f => f.remove());
+  lens.classList.remove('found'); g.hold = -1; g.landed = -1;
+}
+/* advance one step; returns how long the step's animation takes (ms) */
+function gForward(){
+  if (g.hold >= 0 || g.n >= TOTAL) return 0;
+  const idx = g.n, ev = gEval(Math.floor(idx/M), idx%M);
+  g.landed = -1;
+  if (!ev.found){ gSet(idx + 1); return 0; }
+  g.n = idx + 1; g.hold = idx; gRender();
+  const fast = g.playing && g.speed >= 8;
+  const blink = reduceMotion ? 200 : (fast ? 420 : 640), fly = reduceMotion ? 0 : (fast ? 380 : 650);
+  lens.classList.remove('found'); void lens.offsetWidth; lens.classList.add('found');
+  if (fast) lens.style.animationDuration = '.21s'; else lens.style.animationDuration = '';
+  g.celeb.push(setTimeout(() => {
+    lens.classList.remove('found');
+    const r = Math.floor(idx/M), c = idx%M;
+    const from = inCells[(r+1)*N + c+1].getBoundingClientRect(), to = outCells[idx].getBoundingClientRect();
+    const land = () => {
+      document.querySelectorAll('.flyer').forEach(f => f.remove());
+      g.hold = -1; g.landed = idx; g.celeb = [];
+      if (g.n === TOTAL) gComplete();
+      gRender();
+    };
+    if (!fly){ land(); return; }
+    const f = el('div','flyer');
+    Object.assign(f.style, {left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px'});
+    document.body.append(f);
+    const dx = to.left - from.left, dy = to.top - from.top, sc = to.width / from.width;
+    const anim = f.animate([
+      {transform: 'translate(0,0) scale(1)'},
+      {transform: `translate(${dx/2}px, ${dy/2 - 70}px) scale(1.5) rotate(-8deg)`, offset: .5},
+      {transform: `translate(${dx}px, ${dy}px) scale(${sc})`}
+    ], {duration: fly, easing: 'ease-in-out', fill: 'forwards'});
+    anim.onfinish = land;
+    g.celeb.push(setTimeout(land, fly + 300));
+  }, blink));
+  return blink + fly;
+}
+function gSet(n){
+  g.n = Math.max(0, Math.min(TOTAL, n));
+  if (g.n === TOTAL) gComplete();
+  gRender();
+}
+function gComplete(){
+  gStop();
+  const cv = document.createElement('canvas'); cv.width = M; cv.height = M;
+  const ctx = cv.getContext('2d'), id = ctx.createImageData(M, M);
+  for (let i=0;i<TOTAL;i++){ id.data.set([...outColor(gEval(Math.floor(i/M), i%M).found ? 1 : 0), 255], i*4); }
+  ctx.putImageData(id, 0, 0);
+  addToShelf(g.shelf, cv);
+  renderGShelf();
+}
+function gTick(){
+  if (!g.playing) return;
+  if (g.hold >= 0){ g.timer = setTimeout(gTick, 60); return; }
+  const extra = gForward();
+  if (g.playing && g.n < TOTAL) g.timer = setTimeout(gTick, G_DELAYS[g.speed-1] + extra);
+  else if (g.playing && extra) g.timer = setTimeout(() => { g.playing = false; gRender(); }, extra + 50);
+}
+function gTogglePlay(){
+  if (g.playing){ gStop(); gRender(); return; }
+  if (g.hold >= 0) cancelCelebrate();
+  if (g.n >= TOTAL) g.n = 0;
+  g.playing = true; gRender(); g.timer = setTimeout(gTick, 120);
+}
+$('#gPlay').onclick = gTogglePlay;
+$('#gNext').onclick = () => { gStop(); gForward(); };
+$('#gBack').onclick = () => { gStop(); cancelCelebrate(); gSet(g.n - 1); };
+$('#gReset').onclick = gReset;
+$('#gSpeed').oninput = e => { g.speed = +e.target.value; };
+$('#imgHouse').onclick = () => { g.img = houseImg(); g.shelf = []; gReset(); };
+$('#imgClear').onclick = () => { g.img = houseImg().map(r => r.map(() => 0)); g.shelf = []; gReset(); };
+
+/* ---------------- shelves ---------------- */
+function addToShelf(shelf, canvas){
+  const entry = {k: copyK(K.k), name: K.name, canvas};
+  const at = shelf.findIndex(s => sameK(s.k, K.k));
+  if (at >= 0) shelf[at] = entry; else shelf.push(entry);
+}
+function drawShelf(box, shelf, emptyText, onPick){
+  box.textContent = '';
+  if (!shelf.length){ box.append(el('p','empty', emptyText)); return; }
+  shelf.forEach(s => {
+    const f = el('button','thumb'); f.type = 'button'; f.title = 'הצגת התוצאה הזו שוב';
+    const cv = document.createElement('canvas'); cv.width = s.canvas.width; cv.height = s.canvas.height;
+    cv.getContext('2d').drawImage(s.canvas, 0, 0);
+    if (s.canvas.width > 40) cv.style.imageRendering = 'auto';
+    const cap = el('span'); cap.append(miniK(s.k), document.createTextNode(s.name));
+    f.append(cv, cap);
+    f.onclick = () => onPick(s);
+    box.append(f);
+  });
+}
+function renderGShelf(){
+  drawShelf($('#gShelf'), g.shelf, 'כשקרנל מסיים לעבור על כל התמונה, התוצאה נשמרת כאן. הריצו כמה קרנלים שונים ותשוו ביניהם.', s => {
+    gStop(); K.k = copyK(s.k); K.name = s.name; renderKernel();
+    if (P.loaded){ pCompute(); pSetN(0, true); }
+    cancelCelebrate(); g.n = TOTAL; gRender();
+  });
+}
+
+/* =================== PHOTO MODE =================== */
+const P_SPEEDS = [0.1, 0.5, 2, 8, 30, 100, 300, 1000, 4000, 20000];
+const P = { loaded:false, src:null, W:240, H:180, gray:null, strength:null, od:null, n:0, shown:0, playing:false, speed:7, acc:0, raf:0, shelf:[], norm:1 };
+const pIn = $('#pIn'), pOut = $('#pOut'), ictx = pIn.getContext('2d'), octx = pOut.getContext('2d');
+const OW = () => P.W - 2, OH = () => P.H - 2;
+
+$('#pRes').addEventListener('change', pResample);
+$('#pFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
+[$('#pDrop'), $('#pInFrame')].forEach(z => {
+  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('drag'); });
+  z.addEventListener('dragleave', () => z.classList.remove('drag'));
+  z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('drag'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) loadFile(f); });
+});
+$('#pReset').onclick = () => { pStop(); pSetN(0); };
+$('#pBack').onclick = () => { pStop(); pSetN(P.n - 1); };
+$('#pStep').onclick = () => { pStop(); pSetN(P.n + 1); };
+$('#pRow').onclick = () => { pStop(); pSetN(Math.min(OW()*OH(), (Math.floor(P.n / OW()) + 1) * OW())); };
+$('#pPlay').onclick = pTogglePlay;
+$('#pSpeed').oninput = e => { P.speed = +e.target.value; };
+window.addEventListener('resize', pSizeFrames);
+
+function loadFile(file){
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    const s = Math.min(1, 1400 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    P.src = c; P.loaded = true; P.shelf = [];
+    $('#pDrop').hidden = true; $('#pPair').hidden = false; $('#pOpts').hidden = false;
+    pResample(); renderPShelf();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); $('#pDrop').querySelector('p').textContent = 'לא הצלחנו לפתוח את הקובץ. נסו תמונה מסוג JPG או PNG.'; };
+  img.src = url;
+}
+function pResample(){
+  if (!P.loaded) return;
+  pStop();
+  const src = P.src, W = Math.min(+$('#pRes').value, src.width);
+  const cropH = Math.min(src.height, src.width * 1.25), sy = (src.height - cropH) / 2;
+  const H = Math.max(4, Math.round(W * cropH / src.width));
+  P.W = W; P.H = H;
+  const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+  const tx = tmp.getContext('2d'); tx.imageSmoothingEnabled = true; tx.imageSmoothingQuality = 'high';
+  tx.drawImage(src, 0, sy, src.width, cropH, 0, 0, W, H);
+  const d = tx.getImageData(0,0,W,H).data;
+  P.gray = new Float32Array(W*H);
+  const gi = ictx.createImageData(W,H);
+  pIn.width = W; pIn.height = H;
+  for (let i=0;i<W*H;i++){
+    const v = 0.299*d[i*4] + 0.587*d[i*4+1] + 0.114*d[i*4+2];
+    P.gray[i] = v; gi.data[i*4] = v; gi.data[i*4+1] = v; gi.data[i*4+2] = v; gi.data[i*4+3] = 255;
+  }
+  ictx.putImageData(gi, 0, 0);
+  pOut.width = W-2; pOut.height = H-2;
+  P.od = octx.createImageData(W-2, H-2);
+  const pr = W <= 100 ? 'pixelated' : 'auto';
+  pIn.style.imageRendering = pr; pOut.style.imageRendering = pr;
+  $('#pInfo').textContent = `${W} × ${H} = ${fmt(W*H)} פיקסלים`;
+  P.shelf = []; renderPShelf();
+  pSizeFrames();
+  pCompute(); pSetN(0, true);
+}
+function pSizeFrames(){
+  if (!P.loaded || activeTab !== 'photo') return;
+  const pairW = $('#pPair').clientWidth || 800;
+  const ratio = P.H / P.W, maxH = window.innerHeight * 0.6;
+  const narrow = window.innerWidth <= 1100;
+  const wIn = Math.min(narrow ? pairW : (pairW - 40) / (1 + (P.W-2)/P.W), maxH / ratio);
+  $('#pInFrame').style.width = Math.floor(wIn) + 'px';
+  $('#pOutFrame').style.width = Math.floor(wIn * (P.W-2) / P.W) + 'px';
+}
+/* Behind the scenes: the black cells of the kernel become a "darker than the rest" test on gray values. */
+function pResponse(x, y){
+  let sumK = 0, nK = 0, sumR = 0, nR = 0;
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++){
+    const v = P.gray[(y+i)*P.W + x+j];
+    if (K.k[i][j]){ sumK += v; nK++; } else { sumR += v; nR++; }
+  }
+  if (!nK) return 0;
+  const r = nR ? (sumR/nR - sumK/nK) : (255 - sumK/nK) * 0.5;
+  return Math.max(0, r);
+}
+function pCompute(){
+  const ow = OW(), oh = OH(), raw = new Float32Array(ow*oh);
+  for (let y=0;y<oh;y++) for (let x=0;x<ow;x++) raw[y*ow+x] = pResponse(x, y);
+  const pos = Array.from(raw).filter(v => v > 0).sort((a,b) => a - b);
+  P.norm = Math.max(25, pos.length ? pos[Math.floor(pos.length * 0.95)] : 25);
+  P.strength = new Float32Array(ow*oh);
+  for (let i=0;i<raw.length;i++) P.strength[i] = Math.min(1, raw[i] / P.norm);
+  P.shown = 0; if (P.od) P.od.data.fill(0);
+}
+const OUT_BG = [242,237,252], OUT_INK = [84,36,170];
+function outColor(s){ return OUT_BG.map((b,i) => Math.round(b + (OUT_INK[i] - b) * s)); }
+function pSetN(n, force){
+  if (!P.loaded){ pRefresh(); return; }
+  const total = OW()*OH(); n = Math.max(0, Math.min(total, Math.floor(n)));
+  const d = P.od.data;
+  if (n < P.shown){ for (let i=n;i<P.shown;i++) d[i*4+3] = 0; }
+  else for (let i=P.shown;i<n;i++){ const c = outColor(P.strength[i]); d[i*4] = c[0]; d[i*4+1] = c[1]; d[i*4+2] = c[2]; d[i*4+3] = 255; }
+  if (n !== P.shown || force) octx.putImageData(P.od, 0, 0);
+  const wasDone = P.shown === total;
+  P.shown = n; P.n = n;
+  if (n === total && !wasDone){
+    const cv = document.createElement('canvas'); cv.width = pOut.width; cv.height = pOut.height;
+    cv.getContext('2d').drawImage(pOut, 0, 0);
+    addToShelf(P.shelf, cv); renderPShelf();
+  }
+  pRefresh();
+}
+function pRefresh(){
+  const busy = !P.loaded;
+  ['#pReset','#pBack','#pPlay','#pStep','#pRow'].forEach(s => { $(s).disabled = busy; });
+  if (activeTab !== 'photo') return;
+  if (busy){
+    $('#pProg').textContent = '';
+    $('#rPos').textContent = 'עוד לא הועלתה תמונה';
+    cmpCells.forEach(c => { c.className = 'cc'; c.style.background = ''; c.textContent = ''; });
+    setResult('', '', 'העלו תמונה כדי להתחיל');
+    return;
+  }
+  const ow = OW(), oh = OH(), total = ow*oh, idx = P.n > 0 ? P.n - 1 : 0, x = idx % ow, y = Math.floor(idx / ow);
+  const L = $('#pLens').style;
+  L.left = (x/P.W*100) + '%'; L.top = (y/P.H*100) + '%'; L.width = (3/P.W*100) + '%'; L.height = (3/P.H*100) + '%';
+  const mk = $('#pMark'); mk.hidden = P.n === 0;
+  mk.style.left = (x/ow*100) + '%'; mk.style.top = (y/oh*100) + '%'; mk.style.width = (100/ow) + '%'; mk.style.height = (100/oh) + '%';
+  $('#rPos').textContent = `הפיקסל האמצעי: שורה ${y+2}, עמודה ${x+2}`;
+  for (let i=0;i<3;i++) for (let j=0;j<3;j++){
+    const c = cmpCells[i*3+j], v = Math.round(P.gray[(y+i)*P.W + x+j]);
+    c.className = 'cc' + (K.k[i][j] ? ' k1' : ''); c.textContent = ''; c.style.background = `rgb(${v},${v},${v})`;
+  }
+  const s = P.strength[idx], hasK = K.k.flat().some(Boolean);
+  if (!hasK) setResult('', '', 'הקרנל ריק. לחצו על משבצות בקרנל כדי לצבוע אותן בשחור.');
+  else if (P.n === 0) setResult('', '?', 'כמה חזקה ההתאמה כאן?');
+  else {
+    const c = outColor(s);
+    setResult(`rgb(${c.join(',')})`, '', s > 0.6 ? 'התאמה חזקה' : s > 0.25 ? 'התאמה חלקית' : 'אין התאמה');
+  }
+  $('#pProg').textContent = `${fmt(P.n)} מתוך ${fmt(total)} פיקסלים`;
+  $('#pPlay').textContent = P.playing ? '⏸ עצירה' : '▶ הפעלה';
+  $('#pStep').disabled = $('#pRow').disabled = P.n >= total;
+  $('#pBack').disabled = P.n === 0;
+}
+function renderPShelf(){
+  drawShelf($('#pShelf'), P.shelf, 'כשקרנל מסיים לעבור על כל התמונה, התוצאה נשמרת כאן. הריצו כמה קרנלים שונים ותשוו ביניהם.', s => {
+    pStop(); K.k = copyK(s.k); K.name = s.name; renderKernel(); gReset();
+    pCompute(); pSetN(OW()*OH(), true);
+  });
+}
+function pStop(){ P.playing = false; cancelAnimationFrame(P.raf); $('#pPlay').textContent = '▶ הפעלה'; }
+function pLoop(){
+  if (!P.playing) return;
+  P.acc += P_SPEEDS[P.speed-1];
+  const add = Math.floor(P.acc);
+  if (add > 0){ P.acc -= add; pSetN(P.n + add); }
+  if (P.n >= OW()*OH()){ P.playing = false; pRefresh(); return; }
+  P.raf = requestAnimationFrame(pLoop);
+}
+function pTogglePlay(){
+  if (!P.loaded) return;
+  if (P.playing){ pStop(); pRefresh(); return; }
+  if (P.n >= OW()*OH()) pSetN(0);
+  P.playing = true; P.acc = 1; pRefresh(); P.raf = requestAnimationFrame(pLoop);
+}
+
+/* keyboard (space = play/pause, arrows = step) */
+document.addEventListener('keydown', e => {
+  const t = e.target, tag = t && t.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === ' '){ if (tag === 'BUTTON') t.blur(); e.preventDefault(); activeTab === 'grid' ? gTogglePlay() : pTogglePlay(); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); if (activeTab === 'grid'){ gStop(); gForward(); } else { pStop(); pSetN(P.n + 1); } }
+  else if (e.key === 'ArrowRight'){ e.preventDefault(); if (activeTab === 'grid'){ gStop(); cancelCelebrate(); gSet(g.n - 1); } else { pStop(); pSetN(P.n - 1); } }
+});
+
+renderKernel(); gRender(); renderGShelf(); renderPShelf(); pRefresh();
+})();
+</script>
+</body>
+</html>
